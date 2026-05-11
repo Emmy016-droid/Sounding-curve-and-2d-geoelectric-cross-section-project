@@ -1,0 +1,47 @@
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
+def plot_control_xsection(layers, colour='green', title='Control Point Cross‑Section',
+                          xlim=None, ylim=None):
+    fig, ax = plt.subplots(figsize=(8, 6))
+    column_width = 15
+    for name, data in layers.items():
+        x0 = data['dist']
+        cum_depth = 0.0
+        for rho, thick in zip(data['rho'], data['thick']):
+            if thick is None:
+                thick = 8.0
+            rect = patches.Rectangle(
+                (x0, cum_depth), column_width, thick,
+                facecolor=colour, edgecolor='black'
+            )
+            ax.add_patch(rect)
+            ax.text(x0 + column_width/2, cum_depth + thick/2,
+                    f'{rho} Ωm', ha='center', va='center', fontsize=8, color='white')
+            cum_depth += thick
+    if xlim:
+        ax.set_xlim(xlim)
+    if ylim:
+        ax.set_ylim(ylim)
+    else:
+        ax.invert_yaxis()
+    ax.set_xlabel('Distance (m)')
+    ax.set_ylabel('Depth (m)')
+    ax.set_title(title)
+    plt.tight_layout()
+    plt.show()
+
+# ========================================================
+# CHANGE ONLY THESE VALUES
+# ========================================================
+DATA = {
+    'Control': {
+        'dist': 0,
+        'rho': [831, 773, 857, 247],
+        'thick': [2.0, 3.0, 10.0, None]
+    }
+}
+
+plot_control_xsection(DATA,
+                      title='Control Point Geoelectric Cross‑Section',
+                      xlim=(-5, 25), ylim=(30, 0))
