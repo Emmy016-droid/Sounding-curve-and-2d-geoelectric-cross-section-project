@@ -1,0 +1,35 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import CubicSpline
+
+def plot_ves_curve(ab2, apparent_resistivity, station_label='VES'):
+    """
+    Plot a smooth VES sounding curve from observed field data.
+    """
+    log_ab2 = np.log10(ab2)
+    log_rho = np.log10(apparent_resistivity)
+
+    ab2_fine = np.logspace(np.log10(min(ab2)*0.9), np.log10(max(ab2)*1.05), 400)
+    cs = CubicSpline(log_ab2, log_rho)
+    rho_fine = 10 ** cs(np.log10(ab2_fine))
+
+    plt.figure(figsize=(8, 6))
+    plt.loglog(ab2_fine, rho_fine, 'r-', linewidth=2, label='Smooth model')
+    plt.loglog(ab2, apparent_resistivity, 'ko', markersize=6, label='Observed data')
+
+    plt.xlabel('AB/2 (m)')
+    plt.ylabel('Apparent Resistivity (Ωm)')
+    plt.title(f'{station_label} Sounding Curve')
+    plt.grid(True, which='both', ls=':')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+# ========================================================
+# CHANGE ONLY THESE VALUES
+# ========================================================
+AB2 = np.array([1.0, 1.5, 2.0, 3.0, 4.5, 7.0, 10.0, 15.0, 20.0, 30.0, 45.0, 70.0, 100.0])
+RHO = np.array([8.95, 7.48, 7.64, 8.20, 8.22, 9.36, 8.76, 13.12, 12.10, 21.10, 81.18, 86.07, 104.35])
+STATION = 'VES 1'
+
+plot_ves_curve(AB2, RHO, STATION)
