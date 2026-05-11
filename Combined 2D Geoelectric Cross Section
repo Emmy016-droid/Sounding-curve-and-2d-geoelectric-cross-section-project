@@ -1,0 +1,67 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
+def plot_xsection(layers, colour_func, title='Geoelectric Cross‑Section',
+                  xlim=None, ylim=None):
+    """
+    layers : dict of station_name -> {'dist': x, 'rho': [list], 'thick': [list]}
+    colour_func : function(rho) -> colour
+    """
+    fig, ax = plt.subplots(figsize=(14, 7))
+    column_width = 18
+
+    for name, data in layers.items():
+        x0 = data['dist']
+        cum_depth = 0.0
+        for rho, thick in zip(data['rho'], data['thick']):
+            if thick is None:
+                thick = 8.0
+            rect = patches.Rectangle(
+                (x0, cum_depth), column_width, thick,
+                facecolor=colour_func(rho), edgecolor='black', linewidth=1
+            )
+            ax.add_patch(rect)
+            ax.text(x0 + column_width/2, cum_depth + thick/2,
+                    f'{rho} Ωm', ha='center', va='center', fontsize=8, color='white')
+            cum_depth += thick
+        ax.text(x0 + column_width/2, -0.5, name, ha='center', fontsize=9)
+
+    if xlim:
+        ax.set_xlim(xlim)
+    if ylim:
+        ax.set_ylim(ylim)
+    else:
+        ax.invert_yaxis()
+    ax.set_xlabel('Distance (m)')
+    ax.set_ylabel('Depth (m)')
+    ax.set_title(title)
+    plt.tight_layout()
+    plt.show()
+
+# ========================================================
+# CHANGE ONLY THESE VALUES
+# ========================================================
+def my_colour(rho):
+    if rho < 10:
+        return '#1a0033'
+    elif rho < 30:
+        return '#6a1b9a'
+    elif rho < 80:
+        return '#ab47bc'
+    elif rho < 200:
+        return '#1565c0'
+    else:
+        return '#1b5e20'
+
+DATA = {
+    'VES 1': {'dist': 0,   'rho': [8, 5, 20, 80],       'thick': [1.5, 4.0, 10.0, None]},
+    'VES 2': {'dist': 25,  'rho': [14, 10, 30, 120],     'thick': [0.5, 3.0, 10.0, None]},
+    'VES 3': {'dist': 50,  'rho': [22.9, 30, 62],        'thick': [1.0, 6.0, None]},
+    'VES 4': {'dist': 75,  'rho': [15.2, 22.7, 149.2],   'thick': [1.0, 10.0, None]},
+    'VES 5': {'dist': 100, 'rho': [13, 17.4, 63],        'thick': [1.0, 10.0, None]}
+}
+
+plot_xsection(DATA, my_colour,
+              title='2D Geoelectric Cross‑Section – Contaminated Profile (VES 1–VES 5)',
+              xlim=(-5, 125), ylim=(35, 0))
