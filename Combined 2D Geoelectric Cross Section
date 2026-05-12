@@ -1,67 +1,130 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import matplotlib.patches as patches
 
-def plot_xsection(layers, colour_func, title='Geoelectric Cross‑Section',
-                  xlim=None, ylim=None):
+def plot_combined_xsection(layers, colour_func, thresholds, title='',
+                           xlim=None, ylim=None, water_table_depth=None):
     """
-    layers : dict of station_name -> {'dist': x, 'rho': [list], 'thick': [list]}
-    colour_func : function(rho) -> colour
-    """
-    fig, ax = plt.subplots(figsize=(14, 7))
-    column_width = 18
+    Build a 2D geoelectric cross‑section with:
+    - colour‑coded resistivity blocks
+    - station names and distances
+    - resistivity values inside each block
+    - water table line (optional)
+    - colour legend
 
+    layers : dict of station_name -> {
+             'dist': float (m),
+             'rho': [list of resistivities in Ωm],
+             'thick': [list of thicknesses in m, None for half‑space]
+             }
+    colour_func : function(rho) -> hex colour
+    thresholds : list of resistivity bounds for legend
+    water_table_depth : depth (m) to draw dashed water table line (optional)
+    """
+    fig, ax = plt.subplots(figsize=(12, 6))
+    column_width = 12            # width of each station block in metres on the x‑axis
+    max_depth = 5                # initial guess; will be expanded
+
+    # ---- gather legend handles ----
+    legend_patches = []
+    for i in range(len(thresholds)-1):
+        mid_rho = (thresholds[i] + thresholds[i+1]) / 2
+        label = f'{thresholds[i]}‑{thresholds[i+1]} Ωm'
+        legend_patches.append(mpatches.Patch(color=colour_func(mid_rho), label=label))
+
+    # ---- draw each station ----
     for name, data in layers.items():
-        x0 = data['dist']
+        x0 = data['dist'] - column_width/2   # centre block on distance
         cum_depth = 0.0
         for rho, thick in zip(data['rho'], data['thick']):
             if thick is None:
-                thick = 8.0
+                thick = 8.0   # placeholder for basement half‑space
             rect = patches.Rectangle(
                 (x0, cum_depth), column_width, thick,
-                facecolor=colour_func(rho), edgecolor='black', linewidth=1
+                facecolor=colour_func(rho),
+                edgecolor='black', linewidth=1.0
             )
             ax.add_patch(rect)
-            ax.text(x0 + column_width/2, cum_depth + thick/2,
-                    f'{rho} Ωm', ha='center', va='center', fontsize=8, color='white')
-            cum_depth += thick
-        ax.text(x0 + column_width/2, -0.5, name, ha='center', fontsize=9)
 
-    if xlim:
-        ax.set_xlim(xlim)
-    if ylim:
-        ax.set_ylim(ylim)
-    else:
-        ax.invert_yaxis()
-    ax.set_xlabel('Distance (m)')
+            # resistivity label inside block
+            ax.text(x0 + column_width/2, cum_depth + thick/2,
+                    f'{rho} Ωm', ha='center', va='center',
+                    fontsize=8, color='white', weight='bold')
+            cum_depth += thick
+        max_depth = max(max_depth, cum_depth)
+
+        # Station name and distance below the block
+        ax.text(x0 + column_width/2, cum_depth + 0.3,
+                f'{name}\n({data["dist"]} m)', ha='center', va='top',
+                fontsize=9, weight='bold')
+
+    # ---- water table (if given) ----
+    if water_table_depth is not None:
+        ax.axhline(y=water_table_depth, color='cyan', linestyle='--',
+                   linewidth=1.5, label='Inferred water table')
+        # add water table to legend
+        from matplotlib.lines import Line2D
+        legend_patches.append(Line2D([0], [0], color='cyan', linestyle='--',
+                                     label='Water table'))
+
+    # ---- axes and styling ----
+    ax.set_xlim(min(l['dist'] for l in layers.values()) - column_width/2 - 5,
+                max(l['dist'] for l in layers.values()) + column_width/2 + 5)
+    ax.set_ylim(max_depth + 2, 0)
+    ax.set_xlabel('Distance from dumpsite core (m)')
     ax.set_ylabel('Depth (m)')
     ax.set_title(title)
-    plt.tight_layout()
+
+    # add distance ticks
+    dist_values = [l['dist'] for l in layers.values()]
+    ax.set_xticks(dist_values)
+    ax.set_xticklabels([f'{d} m' for d in dist_values])
+
+    # legend outside plot
+    ax.legend(handles=legend_patches, bbox_to_anchor=(1.04, 1), loc='upper left')
+    plt.tight_layout(rect=[0, 0, 0.88, 1])   # leave space for legend
     plt.show()
 
-# ========================================================
-# CHANGE ONLY THESE VALUES
-# ========================================================
+
+# =========================================================================
+# CHANGE ONLY THESE VALUES – everything else is fully automatic
+# =========================================================================
+
+# Resistivity colour map: edit the thresholds and colours to match your geology
 def my_colour(rho):
     if rho < 10:
-        return '#1a0033'
+        return '#1a0033'    # dark purple – severe leachate
     elif rho < 30:
-        return '#6a1b9a'
+        return '#6a1b9a'    # purple – moderate contamination
     elif rho < 80:
-        return '#ab47bc'
+        return '#ab47bc'    # light purple – slight contamination
     elif rho < 200:
-        return '#1565c0'
+        return '#1565c0'    # blue – weathered basement
     else:
-        return '#1b5e20'
+        return '#1b5e20'    # green – fresh basement
 
-DATA = {
-    'VES 1': {'dist': 0,   'rho': [8, 5, 20, 80],       'thick': [1.5, 4.0, 10.0, None]},
-    'VES 2': {'dist': 25,  'rho': [14, 10, 30, 120],     'thick': [0.5, 3.0, 10.0, None]},
-    'VES 3': {'dist': 50,  'rho': [22.9, 30, 62],        'thick': [1.0, 6.0, None]},
-    'VES 4': {'dist': 75,  'rho': [15.2, 22.7, 149.2],   'thick': [1.0, 10.0, None]},
-    'VES 5': {'dist': 100, 'rho': [13, 17.4, 63],        'thick': [1.0, 10.0, None]}
+THRESHOLDS = [0, 10, 30, 80, 200, 1000]   # must have one more than number of colours
+
+# ---- Station data – edit distances, resistivities, and thicknesses ----
+STATIONS = {
+    # VES 1 is the dumpsite core at 0 m
+    'VES 1 (Core)': {'dist': 0,   'rho': [8, 5, 20, 80],       'thick': [1.5, 4.0, 10.0, None]},
+    'VES 2':        {'dist': 25,  'rho': [14, 10, 30, 120],     'thick': [0.5, 3.0, 10.0, None]},
+    'VES 3':        {'dist': 50,  'rho': [22.9, 30, 62],        'thick': [1.0, 6.0, None]},
+    'VES 4':        {'dist': 75,  'rho': [15.2, 22.7, 149.2],   'thick': [1.0, 10.0, None]},
+    'VES 5':        {'dist': 100, 'rho': [13, 17.4, 63],        'thick': [1.0, 10.0, None]},
 }
 
-plot_xsection(DATA, my_colour,
-              title='2D Geoelectric Cross‑Section – Contaminated Profile (VES 1–VES 5)',
-              xlim=(-5, 125), ylim=(35, 0))
+WATER_TABLE = 15.5   # depth in metres (set to None to hide)
+
+# =========================================================================
+# Call the plotting function
+# =========================================================================
+plot_combined_xsection(
+    layers=STATIONS,
+    colour_func=my_colour,
+    thresholds=THRESHOLDS,
+    title='2D Geoelectric Cross‑Section – Contaminated Profile (VES 1–VES 5)',
+    water_table_depth=WATER_TABLE
+)
