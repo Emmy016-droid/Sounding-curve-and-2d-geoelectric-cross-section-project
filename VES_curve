@@ -4,6 +4,7 @@ from scipy.interpolate import CubicSpline
 
 def plot_ves_curve(ab2, apparent_resistivity, station_label='VES', threshold=30):
     """
+    Plot a smooth VES sounding curve from observed field data.
     Smooth VES sounding curve with observed data and leachate threshold.
     """
     log_ab2 = np.log10(ab2)
@@ -28,6 +29,7 @@ def plot_ves_curve(ab2, apparent_resistivity, station_label='VES', threshold=30)
     ax.set_title(f'{station_label} Sounding Curve')
     ax.grid(True, which='both', ls=':')
     ax.legend(loc='best')
+
     plt.tight_layout()
     plt.show()
 
