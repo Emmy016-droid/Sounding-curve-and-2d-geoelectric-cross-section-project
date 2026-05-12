@@ -2,43 +2,101 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 
-def plot_ves_curve(ab2, apparent_resistivity, station_label='VES', threshold=30):
+def plot_ves_curve(ab2, apparent_resistivity, station_label='VES',
+                   threshold=30, layer_rhos=None, layer_thicks=None):
     """
-    Plot a smooth VES sounding curve from observed field data.
-    Smooth VES sounding curve with observed data and leachate threshold.
+    Plot a smooth VES sounding curve and indicate interpreted layer
+    boundaries with their true resistivities AND thicknesses.
+
+    Parameters
+    ----------
+    ab2 : array_like
+        AB/2 electrode half‑spacings (m).
+    apparent_resistivity : array_like
+        Apparent resistivity values (Ωm).
+    station_label : str
+        Title of the plot.
+    threshold : float
+        Resistivity (Ωm) below which the leachate zone is shaded.
+    layer_rhos : list, optional
+        True resistivities (Ωm) of the layers from inversion.
+    layer_thicks : list, optional
+        Thicknesses (m) of the layers; the last thickness (half‑space) is ignored.
     """
     log_ab2 = np.log10(ab2)
     log_rho = np.log10(apparent_resistivity)
 
-    ab2_fine = np.logspace(np.log10(min(ab2)*0.9), np.log10(max(ab2)*1.05), 400)
+    # Dense grid for the smooth model curve
+    ab2_fine = np.logspace(np.log10(min(ab2)*0.9),
+                           np.log10(max(ab2)*1.05), 400)
     cs = CubicSpline(log_ab2, log_rho)
     rho_fine = 10 ** cs(np.log10(ab2_fine))
 
     fig, ax = plt.subplots(figsize=(8, 6))
+
+    # Observed data and smooth model
     ax.loglog(ab2_fine, rho_fine, 'r-', linewidth=2, label='Smooth model')
     ax.loglog(ab2, apparent_resistivity, 'ko', markersize=6, label='Observed data')
 
-    # Leachate threshold line
+    # Leachate zone shading
     ax.axhline(threshold, color='purple', linestyle='--', linewidth=1.5, alpha=0.8,
                label=f'Leachate zone (< {threshold} Ωm)')
     ax.fill_between([min(ab2_fine), max(ab2_fine)], 0.1, threshold,
                     color='purple', alpha=0.05)
 
+    # ---------------------------------------------------------------
+    # Layer annotation (resistivity + thickness)
+    # ---------------------------------------------------------------
+    if layer_rhos is not None and layer_thicks is not None:
+        from matplotlib.lines import Line2D
+
+        cum_depth = 0.0
+        n_layers = len(layer_rhos)
+
+        for i, (rho, thick) in enumerate(zip(layer_rhos, layer_thicks)):
+            # Last element in layer_thicks is the half‑space – no interface below it
+            if i == n_layers - 1:
+                break
+
+            cum_depth += thick   # depth to the bottom of this layer
+
+            # Vertical dashed line at AB/2 ≈ depth (common approximation)
+            ax.axvline(x=cum_depth, color='gray', linestyle='--',
+                       linewidth=1.0, alpha=0.7)
+
+            # Label: resistivity and thickness of the layer that sits ABOVE this interface
+            label_text = f'ρ = {rho:.1f} Ωm\nh = {thick:.2f} m'
+            ax.text(cum_depth * 1.05, threshold * 0.5,
+                    label_text, fontsize=8, color='gray',
+                    va='top', ha='left')
+
+        # Add layer boundaries to the legend
+        legend_handles, legend_labels = ax.get_legend_handles_labels()
+        layer_line = Line2D([0], [0], color='gray', linestyle='--', linewidth=1.0,
+                            label='Layer boundaries (inversion)')
+        legend_handles.append(layer_line)
+        ax.legend(handles=legend_handles, loc='best')
+
     ax.set_xlabel('AB/2 (m)')
     ax.set_ylabel('Apparent Resistivity (Ωm)')
     ax.set_title(f'{station_label} Sounding Curve')
     ax.grid(True, which='both', ls=':')
-    ax.legend(loc='best')
-
     plt.tight_layout()
     plt.show()
 
-# ========================================================
-# CHANGE ONLY THESE VALUES
-# ========================================================
+
+# =====================================================================
+# CHANGE ONLY THE VALUES BELOW FOR A DIFFERENT STATION
+# =====================================================================
 AB2 = np.array([1.0, 1.5, 2.0, 3.0, 4.5, 7.0, 10.0, 15.0, 20.0, 30.0, 45.0, 70.0, 100.0])
 RHO = np.array([8.95, 7.48, 7.64, 8.20, 8.22, 9.36, 8.76, 13.12, 12.10, 21.10, 81.18, 86.07, 104.35])
 STATION = 'VES 1'
-LEACHATE_THRESHOLD = 30   # Ωm – values below this indicate possible contamination
+LEACHATE_THRESHOLD = 30                 # Ωm
 
-plot_ves_curve(AB2, RHO, STATION, LEACHATE_THRESHOLD)
+# ---- Interpreted layers (from RES1DINV) ----
+LAYER_RESISTIVITIES = [8, 5, 20, 80]    # true resistivity (Ωm) for each layer
+LAYER_THICKNESSES   = [1.5, 4.0, 10.0] # thickness (m) – omit the half‑space
+# =====================================================================
+
+plot_ves_curve(AB2, RHO, STATION, LEACHATE_THRESHOLD,
+               layer_rhos=LAYER_RESISTIVITIES, layer_thicks=LAYER_THICKNESSES)
