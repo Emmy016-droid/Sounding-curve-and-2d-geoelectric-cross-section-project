@@ -1,10 +1,19 @@
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import matplotlib.patches as patches
 
-def plot_control_xsection(layers, colour='green', title='Control Point Cross‑Section',
-                          xlim=None, ylim=None):
+def plot_control_xsection(layers, colour_func, thresholds, colour_labels,
+                          title='Control Point Cross‑Section', xlim=None, ylim=None):
     fig, ax = plt.subplots(figsize=(8, 6))
     column_width = 15
+
+    # Legend patches
+    legend_patches = [
+        mpatches.Patch(color=colour_func((thresholds[i]+thresholds[i+1])/2),
+                       label=f'{thresholds[i]}-{thresholds[i+1]} Ωm')
+        for i in range(len(thresholds)-1)
+    ]
+
     for name, data in layers.items():
         x0 = data['dist']
         cum_depth = 0.0
@@ -13,12 +22,14 @@ def plot_control_xsection(layers, colour='green', title='Control Point Cross‑S
                 thick = 8.0
             rect = patches.Rectangle(
                 (x0, cum_depth), column_width, thick,
-                facecolor=colour, edgecolor='black'
+                facecolor=colour_func(rho), edgecolor='black'
             )
             ax.add_patch(rect)
             ax.text(x0 + column_width/2, cum_depth + thick/2,
                     f'{rho} Ωm', ha='center', va='center', fontsize=8, color='white')
             cum_depth += thick
+
+    ax.legend(handles=legend_patches, bbox_to_anchor=(1.02, 1), loc='upper left')
     if xlim:
         ax.set_xlim(xlim)
     if ylim:
@@ -34,6 +45,18 @@ def plot_control_xsection(layers, colour='green', title='Control Point Cross‑S
 # ========================================================
 # CHANGE ONLY THESE VALUES
 # ========================================================
+def my_colour(rho):
+    # Uncontaminated site – use a green scale
+    if rho < 400:
+        return '#a5d6a7'   # light green
+    elif rho < 800:
+        return '#66bb6a'   # mid green
+    else:
+        return '#2e7d32'   # dark green – high resistivity
+
+THRESHOLDS = [0, 400, 800, 2000]
+LABELS = ['<400 Ωm', '400‑800 Ωm', '>800 Ωm']
+
 DATA = {
     'Control': {
         'dist': 0,
@@ -42,6 +65,6 @@ DATA = {
     }
 }
 
-plot_control_xsection(DATA,
+plot_control_xsection(DATA, my_colour, THRESHOLDS, LABELS,
                       title='Control Point Geoelectric Cross‑Section',
                       xlim=(-5, 25), ylim=(30, 0))
