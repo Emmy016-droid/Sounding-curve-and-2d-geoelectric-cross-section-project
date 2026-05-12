@@ -1,25 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_combined_ves(stations, ab2_template=None):
+def plot_combined_ves(stations, threshold=30):
     """
-    Plot all VES sounding curves on one log‑log graph.
-    stations: list of dicts with keys 'name' and 'rho_obs'
-    ab2_template: shared AB/2 values (optional)
+    All stations on one log‑log plot with leachate zone shading.
+    stations : list of dicts with 'name' and 'rho_obs'
     """
-    plt.figure(figsize=(10, 7))
     default_ab2 = np.array([1.0,1.5,2.0,3.0,4.5,7.0,10.0,15.0,20.0,30.0,45.0,70.0,100.0])
 
+    fig, ax = plt.subplots(figsize=(10, 7))
     for st in stations:
         ab2 = st.get('ab2', default_ab2)
         rho = np.array(st['rho_obs'])
-        plt.loglog(ab2, rho, '-o', markersize=4, label=st['name'])
+        ax.loglog(ab2, rho, '-o', markersize=4, label=st['name'])
 
-    plt.xlabel('AB/2 (m)')
-    plt.ylabel('Apparent Resistivity (Ωm)')
-    plt.title('Combined VES Sounding Curves')
-    plt.grid(True, which='both', ls=':')
-    plt.legend()
+    # Leachate zone
+    ax.axhline(threshold, color='purple', linestyle='--', linewidth=1.5, alpha=0.8,
+               label=f'Leachate threshold ({threshold} Ωm)')
+    ax.fill_between([0.5, 200], 0.1, threshold, color='purple', alpha=0.05)
+
+    ax.set_xlabel('AB/2 (m)')
+    ax.set_ylabel('Apparent Resistivity (Ωm)')
+    ax.set_title('Combined VES Sounding Curves')
+    ax.grid(True, which='both', ls=':')
+    ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
 
@@ -34,5 +38,6 @@ stations = [
     {'name': 'VES 5',  'rho_obs': [13.75,12.54,12.69,17.87,19.62,15.56,9.36,14.00,13.35,20.19,83.82,70.14,115.73]},
     {'name': 'Control','rho_obs': [861.56,831.17,800.99,772.52,907.28,856.95,766.66,665.02,643.05,512.33,399.68,247.50,273.30]}
 ]
+LEACHATE_THRESHOLD = 30
 
-plot_combined_ves(stations)
+plot_combined_ves(stations, LEACHATE_THRESHOLD)
