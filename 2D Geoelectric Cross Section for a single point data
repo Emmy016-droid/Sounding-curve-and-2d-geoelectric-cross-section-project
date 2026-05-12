@@ -17,9 +17,10 @@ def plot_control_xsection(layers, colour_func, thresholds, colour_labels,
     for name, data in layers.items():
         x0 = data['dist']
         cum_depth = 0.0
+        # Assuming 'rho' and 'thick' are lists within data
         for rho, thick in zip(data['rho'], data['thick']):
             if thick is None:
-                thick = 8.0
+                thick = 8.0 # Default thickness if None
             rect = patches.Rectangle(
                 (x0, cum_depth), column_width, thick,
                 facecolor=colour_func(rho), edgecolor='black'
@@ -30,12 +31,13 @@ def plot_control_xsection(layers, colour_func, thresholds, colour_labels,
             cum_depth += thick
 
     ax.legend(handles=legend_patches, bbox_to_anchor=(1.02, 1), loc='upper left')
+
     if xlim:
         ax.set_xlim(xlim)
     if ylim:
         ax.set_ylim(ylim)
     else:
-        ax.invert_yaxis()
+        ax.invert_yaxis() # Invert y-axis to show depth increasing downwards
     ax.set_xlabel('Distance (m)')
     ax.set_ylabel('Depth (m)')
     ax.set_title(title)
@@ -55,7 +57,7 @@ def my_colour(rho):
         return '#2e7d32'   # dark green – high resistivity
 
 THRESHOLDS = [0, 400, 800, 2000]
-LABELS = ['<400 Ωm', '400‑800 Ωm', '>800 Ωm']
+LABELS = ['<400 Ωm', '400-800 Ωm', '>800 Ωm']
 
 DATA = {
     'Control': {
