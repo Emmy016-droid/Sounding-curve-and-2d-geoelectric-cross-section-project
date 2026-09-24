@@ -33,12 +33,23 @@ Project Workflow
 
 Project Outputs
 
-The repository contains examples of:
+The repository contains examples of the geophysical processing and visualization work completed in this project.
 
-- VES sounding curves
-- Combined VES curve visualizations
-- 2D geoelectric cross-sections
-- Processed geophysical results
+Combined VES Sounding Curves
+
+"Combined VES Sounding Curves" (combined%20VES%20points%20load.png)
+
+Individual VES Sounding Curve
+
+"Individual VES Sounding Curve" (dsingle%20VES%20Curve%20ownload.png)
+
+Combined 2D Geoelectric Cross-Section
+
+"Combined 2D Geoelectric Cross-Section" (docombined%202d%20geoelectric%20cross%20nload.png)
+
+Individual 2D Geoelectric Cross-Section
+
+"Individual 2D Geoelectric Cross-Section" (dosingle%20geoelectric%20cross%20section%20yy%20I'mwnload.png)
 
 Skills Demonstrated
 
